@@ -15,51 +15,41 @@ const resListEl = document.getElementById("resList");
 
 const RES_KEY = "aurora_premium_single_room_reservations_v1";
 
-// ✅ Only 1 room in the whole demo
+
 const ROOM = {
   id: 1,
   hotel: "Aurora Premium Hotel",
   room: "Deniz Manzaralı Standart Oda"
 };
 
-// ✅ Reservations can start only from Jan 1, 2026
+
 const MIN_DATE = "2026-01-01";
 
 function getReservations() {
-  try { return JSON.parse(localStorage.getItem(RES_KEY)) || []; }
-  catch { return []; }
+  try {
+    return JSON.parse(localStorage.getItem(RES_KEY)) || [];
+  } catch {
+    return [];
+  }
 }
+
 function saveReservations(list) {
   localStorage.setItem(RES_KEY, JSON.stringify(list));
 }
 
-// ✅ UI: disable booking if already reserved
+
 function updateBookingUI() {
-  const list = getReservations();
-  const alreadyReserved = list.length > 0;
-
-  // Disable open buttons if reserved
-  openWidget.disabled = alreadyReserved;
-  openWidgetTop.disabled = alreadyReserved;
-
-  if (alreadyReserved) {
-    openWidget.textContent = "Rezerve Edildi";
-    openWidgetTop.textContent = "Rezerve Edildi";
-  } else {
-    openWidget.textContent = "Rezervasyon Yap";
-    openWidgetTop.textContent = "Rezervasyon";
-  }
-
-  // Set min date on inputs (extra safety)
   checkIn.min = MIN_DATE;
   checkOut.min = MIN_DATE;
 }
 
 function showWidget() {
+  msg.textContent = "";
+
   const list = getReservations();
   if (list.length > 0) {
-    // ✅ Hard block: only one reservation allowed
-    msg.textContent = "❌ Bu projede tek oda var. Bir kez rezervasyon yapıldıktan sonra yeni rezervasyon alınmaz.";
+    msg.textContent =
+      "❌ Bu projede yalnızca 1 oda bulunmaktadır. Bir kez rezervasyon yapıldıktan sonra yeni rezervasyon alınmaz.";
     return;
   }
 
@@ -87,20 +77,25 @@ function renderReservations() {
     return;
   }
 
-  list.slice().reverse().forEach(r => {
-    const div = document.createElement("div");
-    div.className = "resItem";
-    div.innerHTML = `
-      <div class="resTop">
-        <div>${r.full_name} — <span style="opacity:.8">${ROOM.room}</span></div>
-        <div>${r.check_in} → ${r.check_out}</div>
-      </div>
-      <div class="resMeta">
-        Email: ${r.email} • Kaydedildi: ${new Date(r.created_at).toLocaleString("tr-TR")}
-      </div>
-    `;
-    resListEl.appendChild(div);
-  });
+  list
+    .slice()
+    .reverse()
+    .forEach((r) => {
+      const div = document.createElement("div");
+      div.className = "resItem";
+      div.innerHTML = `
+        <div class="resTop">
+          <div>${r.full_name} — <span style="opacity:.8">${ROOM.room}</span></div>
+          <div>${r.check_in} → ${r.check_out}</div>
+        </div>
+        <div class="resMeta">
+          Email: ${r.email} • Kaydedildi: ${new Date(r.created_at).toLocaleString(
+            "tr-TR"
+          )}
+        </div>
+      `;
+      resListEl.appendChild(div);
+    });
 }
 
 form.addEventListener("submit", (e) => {
@@ -109,9 +104,10 @@ form.addEventListener("submit", (e) => {
 
   const list = getReservations();
 
-  // ✅ Block if already reserved
+
   if (list.length > 0) {
-    msg.textContent = "❌ Bu projede tek oda var. Bir kez rezervasyon yapıldıktan sonra yeni rezervasyon alınmaz.";
+    msg.textContent =
+      "❌ Bu projede yalnızca 1 oda bulunmaktadır. Bir kez rezervasyon yapıldıktan sonra yeni rezervasyon alınmaz.";
     return;
   }
 
@@ -130,7 +126,7 @@ form.addEventListener("submit", (e) => {
     return;
   }
 
-  // ✅ Date rule: must be >= 2026-01-01
+  
   if (payload.check_in < MIN_DATE || payload.check_out < MIN_DATE) {
     msg.textContent = "❌ Rezervasyonlar 1 Ocak 2026’dan itibaren başlar.";
     return;
@@ -144,12 +140,13 @@ form.addEventListener("submit", (e) => {
   list.push(payload);
   saveReservations(list);
 
-  msg.textContent = "✅ Rezervasyon kaydedildi! (Tek oda olduğu için artık yeni rezervasyon alınmayacak.)";
+  msg.textContent = "✅ Rezervasyon kaydedildi!";
   renderReservations();
   updateBookingUI();
 
   setTimeout(hideWidget, 900);
 });
 
+// init
 updateBookingUI();
 renderReservations();
