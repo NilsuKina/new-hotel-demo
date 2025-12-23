@@ -1,17 +1,17 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from datetime import datetime
+from datetime import datetime, date
 
 app = Flask(__name__)
 CORS(app)
 
-ROOMS = [
-    {"id": 101, "type": "Deluxe", "price_per_night": 2500, "capacity": 2, "status": "available"},
-    {"id": 102, "type": "Suite",  "price_per_night": 4200, "capacity": 3, "status": "available"},
-    {"id": 201, "type": "Standard", "price_per_night": 1700, "capacity": 2, "status": "maintenance"},
-]
+# ✅ Only 1 room in the whole project
+ROOM = {"id": 1, "type": "Deniz Manzaralı Standart Oda", "price_per_night": 2500, "capacity": 2, "status": "available"}
 
+# ✅ Single reservation list (only 1 allowed)
 RESERVATIONS = []
+
+MIN_DATE = date(2026, 1, 1)
 
 @app.get("/api/health")
 def health():
@@ -19,7 +19,7 @@ def health():
 
 @app.get("/api/rooms")
 def list_rooms():
-    return jsonify(ROOMS)
+    return jsonify([ROOM])
 
 @app.get("/api/reservations")
 def list_reservations():
@@ -34,22 +34,51 @@ def create_reservation():
     if missing:
         return jsonify({"error": f"Missing fields: {missing}"}), 400
 
-    room = next((r for r in ROOMS if r["id"] == int(data["room_id"])), None)
-    if not room:
-        return jsonify({"error": "Room not found"}), 404
-    if room["status"] != "available":
+    # ✅ Only one reservation allowed in the whole project
+    if len(RESERVATIONS) > 0:
+        return jsonify({"error": "This project has only one room. A reservation already exists."}), 409
+
+    # ✅ Only the single room is valid
+    if int(data["room_id"]) != int(ROOM["id"]):
+        return jsonify({"error": "Room not found (single-room demo)."}), 404
+
+    # ✅ Room must be available
+    if ROOM["status"] != "available":
         return jsonify({"error": "Room not available"}), 409
 
+    # ✅ Date validations
+    try:
+        check_in = date.fromisoformat(data["check_in"])
+        check_out = date.fromisoformat(data["check_out"])
+    except Exception:
+        return jsonify({"error": "Invalid date format. Use YYYY-MM-DD"}), 400
+
+    if check_in < MIN_DATE or check_out < MIN_DATE:
+        return jsonify({"error": "Reservations start from January 1, 2026"}), 400
+
+    if check_out <= check_in:
+        return jsonify({"error": "Check-out must be after check-in"}), 400
+
+    guests = int(data["guests"])
+    if guests <= 0:
+        return jsonify({"error": "Guests must be >= 1"}), 400
+    if guests > int(ROOM["capacity"]):
+        return jsonify({"error": "Guests exceed room capacity"}), 400
+
     reservation = {
-        "id": len(RESERVATIONS) + 1,
-        "full_name": data["full_name"],
-        "room_id": int(data["room_id"]),
+        "id": 1,
+        "full_name": data["full_name"].strip(),
+        "room_id": int(ROOM["id"]),
         "check_in": data["check_in"],
         "check_out": data["check_out"],
-        "guests": int(data["guests"]),
+        "guests": guests,
         "created_at": datetime.utcnow().isoformat()
     }
     RESERVATIONS.append(reservation)
+
+    # ✅ After booking, mark room unavailable (nice demo detail)
+    ROOM["status"] = "reserved"
+
     return jsonify(reservation), 201
 
 if __name__ == "__main__":

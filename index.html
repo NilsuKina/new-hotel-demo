@@ -50,12 +50,14 @@
       <form id="resForm" class="widget__form">
         <label>
           Check-In
-          <input id="check_in" type="date" required>
+          <!-- ✅ 1 Ocak 2026’dan önce seçilemesin -->
+          <input id="check_in" type="date" min="2026-01-01" required>
         </label>
 
         <label>
           Check-Out
-          <input id="check_out" type="date" required>
+          <!-- ✅ 1 Ocak 2026’dan önce seçilemesin -->
+          <input id="check_out" type="date" min="2026-01-01" required>
         </label>
 
         <label>

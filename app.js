@@ -22,13 +22,53 @@ const ROOM = {
   room: "Deniz Manzaralı Standart Oda"
 };
 
-function showWidget(){
+// ✅ Reservations can start only from Jan 1, 2026
+const MIN_DATE = "2026-01-01";
+
+function getReservations() {
+  try { return JSON.parse(localStorage.getItem(RES_KEY)) || []; }
+  catch { return []; }
+}
+function saveReservations(list) {
+  localStorage.setItem(RES_KEY, JSON.stringify(list));
+}
+
+// ✅ UI: disable booking if already reserved
+function updateBookingUI() {
+  const list = getReservations();
+  const alreadyReserved = list.length > 0;
+
+  // Disable open buttons if reserved
+  openWidget.disabled = alreadyReserved;
+  openWidgetTop.disabled = alreadyReserved;
+
+  if (alreadyReserved) {
+    openWidget.textContent = "Rezerve Edildi";
+    openWidgetTop.textContent = "Rezerve Edildi";
+  } else {
+    openWidget.textContent = "Rezervasyon Yap";
+    openWidgetTop.textContent = "Rezervasyon";
+  }
+
+  // Set min date on inputs (extra safety)
+  checkIn.min = MIN_DATE;
+  checkOut.min = MIN_DATE;
+}
+
+function showWidget() {
+  const list = getReservations();
+  if (list.length > 0) {
+    // ✅ Hard block: only one reservation allowed
+    msg.textContent = "❌ Bu projede tek oda var. Bir kez rezervasyon yapıldıktan sonra yeni rezervasyon alınmaz.";
+    return;
+  }
+
   widget.classList.remove("widget--hidden");
   widget.setAttribute("aria-hidden", "false");
   setTimeout(() => checkIn.focus(), 120);
 }
 
-function hideWidget(){
+function hideWidget() {
   widget.classList.add("widget--hidden");
   widget.setAttribute("aria-hidden", "true");
   msg.textContent = "";
@@ -38,19 +78,11 @@ openWidget.addEventListener("click", showWidget);
 openWidgetTop.addEventListener("click", showWidget);
 closeWidget.addEventListener("click", hideWidget);
 
-function getReservations(){
-  try { return JSON.parse(localStorage.getItem(RES_KEY)) || []; }
-  catch { return []; }
-}
-function saveReservations(list){
-  localStorage.setItem(RES_KEY, JSON.stringify(list));
-}
-
-function renderReservations(){
+function renderReservations() {
   const list = getReservations();
   resListEl.innerHTML = "";
 
-  if(list.length === 0){
+  if (list.length === 0) {
     resListEl.innerHTML = `<div class="resItem">Henüz rezervasyon yok.</div>`;
     return;
   }
@@ -75,6 +107,14 @@ form.addEventListener("submit", (e) => {
   e.preventDefault();
   msg.textContent = "";
 
+  const list = getReservations();
+
+  // ✅ Block if already reserved
+  if (list.length > 0) {
+    msg.textContent = "❌ Bu projede tek oda var. Bir kez rezervasyon yapıldıktan sonra yeni rezervasyon alınmaz.";
+    return;
+  }
+
   const payload = {
     id: crypto.randomUUID(),
     room_id: ROOM.id,
@@ -85,23 +125,31 @@ form.addEventListener("submit", (e) => {
     created_at: new Date().toISOString()
   };
 
-  if (!payload.check_in || !payload.check_out){
+  if (!payload.check_in || !payload.check_out) {
     msg.textContent = "❌ Lütfen Check-in ve Check-out seçin.";
     return;
   }
-  if (payload.check_out <= payload.check_in){
+
+  // ✅ Date rule: must be >= 2026-01-01
+  if (payload.check_in < MIN_DATE || payload.check_out < MIN_DATE) {
+    msg.textContent = "❌ Rezervasyonlar 1 Ocak 2026’dan itibaren başlar.";
+    return;
+  }
+
+  if (payload.check_out <= payload.check_in) {
     msg.textContent = "❌ Check-out, Check-in tarihinden sonra olmalı.";
     return;
   }
 
-  const list = getReservations();
   list.push(payload);
   saveReservations(list);
 
-  msg.textContent = "✅ Rezervasyon kaydedildi!";
+  msg.textContent = "✅ Rezervasyon kaydedildi! (Tek oda olduğu için artık yeni rezervasyon alınmayacak.)";
   renderReservations();
+  updateBookingUI();
 
-  setTimeout(hideWidget, 700);
+  setTimeout(hideWidget, 900);
 });
 
+updateBookingUI();
 renderReservations();
