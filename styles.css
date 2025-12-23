@@ -265,3 +265,15 @@ input{
   .widget__form{grid-template-columns: 1fr 1fr; }
   .bookBtn{grid-column: 1 / -1;}
 }
+.deleteBtn{
+  border: 1px solid rgba(255,255,255,.22);
+  background: transparent;
+  color: #fff;
+  padding: 9px 12px;
+  border-radius: 12px;
+  font-weight: 900;
+  cursor: pointer;
+}
+.deleteBtn:hover{
+  border-color: rgba(255,255,255,.45);
+}

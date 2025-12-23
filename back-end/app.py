@@ -5,13 +5,24 @@ from datetime import datetime, date
 app = Flask(__name__)
 CORS(app)
 
-# ✅ Only 1 room in the whole project
-ROOM = {"id": 1, "type": "Deniz Manzaralı Standart Oda", "price_per_night": 2500, "capacity": 2, "status": "available"}
 
-# ✅ Single reservation list (only 1 allowed)
+ROOM = {
+    "id": 1,
+    "type": "Deniz Manzaralı Standart Oda",
+    "price_per_night": 2500,
+    "capacity": 2,
+    "status": "available",
+}
+
 RESERVATIONS = []
-
 MIN_DATE = date(2026, 1, 1)
+
+def parse_date(s: str) -> date:
+    return date.fromisoformat(s)
+
+def overlaps(a_start: date, a_end: date, b_start: date, b_end: date) -> bool:
+    # [start, end) overlap rule: a_start < b_end and a_end > b_start
+    return a_start < b_end and a_end > b_start
 
 @app.get("/api/health")
 def health():
@@ -34,22 +45,14 @@ def create_reservation():
     if missing:
         return jsonify({"error": f"Missing fields: {missing}"}), 400
 
-    # ✅ Only one reservation allowed in the whole project
-    if len(RESERVATIONS) > 0:
-        return jsonify({"error": "This project has only one room. A reservation already exists."}), 409
-
-    # ✅ Only the single room is valid
+    # Only the single room is valid
     if int(data["room_id"]) != int(ROOM["id"]):
         return jsonify({"error": "Room not found (single-room demo)."}), 404
 
-    # ✅ Room must be available
-    if ROOM["status"] != "available":
-        return jsonify({"error": "Room not available"}), 409
-
-    # ✅ Date validations
+    # Date validations
     try:
-        check_in = date.fromisoformat(data["check_in"])
-        check_out = date.fromisoformat(data["check_out"])
+        check_in = parse_date(data["check_in"])
+        check_out = parse_date(data["check_out"])
     except Exception:
         return jsonify({"error": "Invalid date format. Use YYYY-MM-DD"}), 400
 
@@ -65,8 +68,15 @@ def create_reservation():
     if guests > int(ROOM["capacity"]):
         return jsonify({"error": "Guests exceed room capacity"}), 400
 
+    
+    for r in RESERVATIONS:
+        existing_in = parse_date(r["check_in"])
+        existing_out = parse_date(r["check_out"])
+        if overlaps(check_in, check_out, existing_in, existing_out):
+            return jsonify({"error": "Room already booked for the selected dates"}), 409
+
     reservation = {
-        "id": 1,
+        "id": len(RESERVATIONS) + 1,
         "full_name": data["full_name"].strip(),
         "room_id": int(ROOM["id"]),
         "check_in": data["check_in"],
@@ -75,11 +85,16 @@ def create_reservation():
         "created_at": datetime.utcnow().isoformat()
     }
     RESERVATIONS.append(reservation)
-
-    # ✅ After booking, mark room unavailable (nice demo detail)
-    ROOM["status"] = "reserved"
-
     return jsonify(reservation), 201
+
+@app.delete("/api/reservations/<int:res_id>")
+def delete_reservation(res_id: int):
+    global RESERVATIONS
+    before = len(RESERVATIONS)
+    RESERVATIONS = [r for r in RESERVATIONS if r["id"] != res_id]
+    if len(RESERVATIONS) == before:
+        return jsonify({"error": "Reservation not found"}), 404
+    return jsonify({"ok": True}), 200
 
 if __name__ == "__main__":
     app.run(port=5000, debug=True)
