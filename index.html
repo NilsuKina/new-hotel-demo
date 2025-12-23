@@ -1,12 +1,15 @@
 <!doctype html>
 <html lang="tr">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Aurora Premium Hotel – Reservation Demo</title>
-  <link rel="stylesheet" href="./styles.css"/>
+
+  <!-- GitHub Pages uyumlu -->
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+
   <!-- HERO / WELCOME -->
   <section class="hero">
     <div class="hero__overlay"></div>
@@ -47,25 +50,27 @@
       <form id="resForm" class="widget__form">
         <label>
           Check-In
-          <input id="check_in" type="date" required />
+          <input id="check_in" type="date" required>
         </label>
 
         <label>
           Check-Out
-          <input id="check_out" type="date" required />
+          <input id="check_out" type="date" required>
         </label>
 
         <label>
           Ad Soyad
-          <input id="full_name" type="text" placeholder="Nilsu Kına" required />
+          <input id="full_name" type="text" placeholder="Nilsu Kına" required>
         </label>
 
         <label>
           Email
-          <input id="email" type="email" placeholder="nilsu@example.com" required />
+          <input id="email" type="email" placeholder="nilsu@example.com" required>
         </label>
 
-        <button class="bookBtn" type="submit">Rezervasyonu Kaydet</button>
+        <button class="bookBtn" type="submit">
+          Rezervasyonu Kaydet
+        </button>
 
         <div id="msg" class="msg"></div>
       </form>
@@ -78,6 +83,7 @@
     <div id="resList" class="resList"></div>
   </main>
 
-  <script src="./app.js"></script>
+  <!-- JS -->
+  <script src="app.js"></script>
 </body>
 </html>
